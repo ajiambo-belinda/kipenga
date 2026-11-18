@@ -3,6 +3,7 @@ import express from 'express'
 import cors from 'cors'
 import helmet from 'helmet'
 import { prisma } from './db.js'
+import { getHeadToHead } from './analysis/headToHead.js'
 
 const app = express()
 
@@ -12,6 +13,11 @@ app.use(express.json())
 
 app.get('/health', (_req, res) => {
   res.json({ ok: true })
+})
+
+app.get('/api/teams', async (_req, res) => {
+  const teams = await prisma.team.findMany({ orderBy: { name: 'asc' } })
+  res.json(teams)
 })
 
 app.get('/api/matches', async (req, res) => {
@@ -33,6 +39,17 @@ app.get('/api/matches', async (req, res) => {
     },
   })
   res.json(matches)
+})
+
+app.get('/api/head-to-head', async (req, res) => {
+  const teamA = Number(req.query.teamA)
+  const teamB = Number(req.query.teamB)
+  if (!Number.isInteger(teamA) || !Number.isInteger(teamB) || teamA === teamB) {
+    res.status(400).json({ error: 'Provide two different team ids, like ?teamA=1&teamB=2' })
+    return
+  }
+  const limit = Math.min(Number(req.query.limit) || 10, 50)
+  res.json(await getHeadToHead(teamA, teamB, limit))
 })
 
 const port = Number(process.env.PORT ?? 3000)
