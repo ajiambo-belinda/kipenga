@@ -1,7 +1,7 @@
 import { parse } from 'csv-parse/sync'
 import { prisma } from './db.js'
 
-const SEASONS = ['2425', '2526', '2627']
+const SEASONS = [ '1516', '1617', '1718', '1819', '1920', '2021', '2122', '2223', '2324', '2425', '2526', '2627']
 const BASE_URL = 'https://www.football-data.co.uk/mmz4281'
 
 function seasonLabel(code: string) {
