@@ -14,9 +14,25 @@ app.get('/health', (_req, res) => {
   res.json({ ok: true })
 })
 
-app.get('/api/teams', async (_req, res) => {
-  const teams = await prisma.team.findMany({ orderBy: { name: 'asc' } })
-  res.json(teams)
+app.get('/api/matches', async (req, res) => {
+  const season = typeof req.query.season === 'string' ? req.query.season : undefined
+  const limit = Math.min(Number(req.query.limit) || 20, 100)
+
+  const matches = await prisma.match.findMany({
+    where: season ? { season } : undefined,
+    orderBy: { matchDate: 'desc' },
+    take: limit,
+    select: {
+      id: true,
+      season: true,
+      matchDate: true,
+      homeGoals: true,
+      awayGoals: true,
+      homeTeam: { select: { id: true, name: true } },
+      awayTeam: { select: { id: true, name: true } },
+    },
+  })
+  res.json(matches)
 })
 
 const port = Number(process.env.PORT ?? 3000)
