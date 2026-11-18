@@ -9,6 +9,23 @@ datasource db {
 }
 
 model Team {
-  id   Int    @id @default(autoincrement())
-  name String @unique
+  id          Int     @id @default(autoincrement())
+  name        String  @unique
+  homeMatches Match[] @relation("HomeTeam")
+  awayMatches Match[] @relation("AwayTeam")
+}
+
+model Match {
+  id         Int      @id @default(autoincrement())
+  season     String
+  matchDate  DateTime
+  homeTeamId Int
+  awayTeamId Int
+  homeGoals  Int?
+  awayGoals  Int?
+  homeTeam   Team     @relation("HomeTeam", fields: [homeTeamId], references: [id])
+  awayTeam   Team     @relation("AwayTeam", fields: [awayTeamId], references: [id])
+
+  @@unique([matchDate, homeTeamId, awayTeamId])
+  @@index([matchDate])
 }
