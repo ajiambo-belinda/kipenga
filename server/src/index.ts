@@ -72,6 +72,31 @@ app.get('/api/head-to-head', async (req, res) => {
   res.json(await getHeadToHead(teamA, teamB, limit))
 })
 
+app.get('/api/overview', async (_req, res) => {
+  const [teams, matchesPlayed, seasons, latestMatch] = await Promise.all([
+    prisma.team.count(),
+    prisma.match.count({ where: { homeGoals: { not: null } } }),
+    prisma.match.findMany({
+      distinct: ['season'],
+      select: { season: true },
+      orderBy: { season: 'desc' },
+    }),
+    prisma.match.findFirst({
+      where: { homeGoals: { not: null } },
+      orderBy: { matchDate: 'desc' },
+      select: {
+        matchDate: true,
+        homeGoals: true,
+        awayGoals: true,
+        homeTeam: { select: { name: true } },
+        awayTeam: { select: { name: true } },
+      },
+    }),
+  ])
+
+  res.json({ teams, matchesPlayed, seasons: seasons.map((s) => s.season), latestMatch })
+})
+
 const port = Number(process.env.PORT ?? 3000)
 app.listen(port, () => {
   console.log(`API running on http://localhost:${port}`)
