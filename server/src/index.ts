@@ -97,6 +97,33 @@ app.get('/api/overview', async (_req, res) => {
   res.json({ teams, matchesPlayed, seasons: seasons.map((s) => s.season), latestMatch })
 })
 
+app.get('/api/fixtures', async (req, res) => {
+  const dateParam = typeof req.query.date === 'string' ? req.query.date : ''
+  const date = /^\d{4}-\d{2}-\d{2}$/.test(dateParam) ? dateParam : new Date().toISOString().slice(0, 10)
+  const offset = Math.max(-12, Math.min(14, Number(req.query.offset) || 0)) // hours ahead of UTC
+
+  const [y, m, d] = date.split('-').map(Number)
+  const start = new Date(Date.UTC(y, m - 1, d) - offset * 3600000)
+  const end = new Date(start.getTime() + 24 * 3600000)
+
+  const fixtures = await prisma.match.findMany({
+    where: { kickoffAt: { gte: start, lt: end } },
+    orderBy: { kickoffAt: 'asc' },
+    select: {
+      id: true,
+      kickoffAt: true,
+      status: true,
+      statusShort: true,
+      minute: true,
+      homeGoals: true,
+      awayGoals: true,
+      competition: { select: { id: true, name: true, country: true, tier: true } },
+      homeTeam: { select: { id: true, name: true } },
+      awayTeam: { select: { id: true, name: true } },
+    },
+  })
+  res.json(fixtures)
+})
 const port = Number(process.env.PORT ?? 3000)
 app.listen(port, () => {
   console.log(`API running on http://localhost:${port}`)

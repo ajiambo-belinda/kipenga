@@ -3,7 +3,9 @@ import Logo from '../components/Logo'
 
 const items = [
   { to: '/app', label: 'Overview', end: true },
+  { to: '/app/matches', label: 'Matches', end: false },
   { to: '/app/analysis', label: 'Match analysis', end: false },
+  
 ]
 const comingSoon = ['Live matches', 'VAR Room', 'Ask Kipenga']
 
@@ -54,6 +56,9 @@ export default function DashboardLayout() {
           <nav className="flex gap-4 text-sm font-semibold">
             <NavLink to="/app" end className="text-on-dark/80 hover:text-on-dark">
               Overview
+            </NavLink>
+            <NavLink to="/app/matches" className="text-on-dark/80 hover:text-on-dark">
+              Matches
             </NavLink>
             <NavLink to="/app/analysis" className="text-on-dark/80 hover:text-on-dark">
               Analysis
