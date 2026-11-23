@@ -1,84 +1,67 @@
 import { useQuery } from '@tanstack/react-query'
 import StatTile from '../components/StatTile'
+import { localDate, hoursAheadOfUtc } from '../lib/dates'
 
-type Overview = {
-  teams: number
-  matchesPlayed: number
-  seasons: string[]
-  latestMatch: {
-    matchDate: string
-    homeGoals: number
-    awayGoals: number
-    homeTeam: { name: string }
-    awayTeam: { name: string }
-  } | null
+type Fixture = {
+  id: number
+  status: 'SCHEDULED' | 'LIVE' | 'FINISHED' | 'POSTPONED' | 'CANCELLED'
 }
 
-async function fetchOverview(): Promise<Overview> {
-  const res = await fetch('http://localhost:3000/api/overview')
-  if (!res.ok) throw new Error('Could not load overview')
+async function fetchToday(date: string): Promise<Fixture[]> {
+  const res = await fetch(
+    `http://localhost:3000/api/fixtures?date=${date}&offset=${hoursAheadOfUtc}`,
+  )
+  if (!res.ok) throw new Error('Could not load matches')
   return res.json()
 }
 
-function formatDate(iso: string) {
-  return new Date(iso).toLocaleDateString('en-GB', {
-    day: 'numeric',
-    month: 'short',
-    year: 'numeric',
-    timeZone: 'UTC',
-  })
-}
-
 export default function Overview() {
+  const date = localDate(0)
   const { data, isLoading, error } = useQuery({
-    queryKey: ['overview'],
-    queryFn: fetchOverview,
+    queryKey: ['fixtures', date],
+    queryFn: () => fetchToday(date),
+    refetchInterval: 60_000,
+  })
+
+  const today = new Date().toLocaleDateString('en-GB', {
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
   })
 
   if (isLoading) return <p>Loading overview...</p>
   if (error || !data) return <p>Something went wrong. Is the server running?</p>
 
-  const oldest = data.seasons[data.seasons.length - 1]
-  const newest = data.seasons[0]
+  const live = data.filter((f) => f.status === 'LIVE').length
 
   return (
     <div>
-      <h1>Overview</h1>
-      <p className="text-muted">Premier League data stored in Kipenga.</p>
+      <h1 className="mb-0">Overview</h1>
+      <p className="text-sm text-muted">{today}</p>
 
-      <div className="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <StatTile label="Teams" value={data.teams} hint="Clubs in the data" colour="bg-purple" />
+      <h2 className="mb-3 mt-8 text-lg">Today</h2>
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <StatTile icon="live" label="Live matches" value={live} hint="Right now" colour="bg-live" />
         <StatTile
-          label="Matches played"
-          value={data.matchesPlayed.toLocaleString('en-GB')}
-          hint="With a final score"
+          icon="matches"
+          label="Matches today"
+          value={data.length}
+          hint="In competitions we track"
           colour="bg-accent"
         />
         <StatTile
-          label="Seasons"
-          value={data.seasons.length}
-          hint={`${oldest} to ${newest}`}
-          colour="bg-lime"
+          icon="var"
+          label="VAR checks today"
+          value="Soon"
+          hint="Needs live event data"
+          colour="bg-var"
         />
-        <StatTile
-          label="Latest result"
-          value={data.latestMatch ? formatDate(data.latestMatch.matchDate) : '-'}
-          hint="Most recent match in the data"
-          colour="bg-ink"
-        />
+        <StatTile icon="ai" label="Ask Kipenga" value="Soon" hint="AI assistant" colour="bg-ai" />
       </div>
-
-      {data.latestMatch && (
-        <div className="mt-6 rounded-2xl border border-line bg-card p-6">
-          <p className="text-xs font-semibold tracking-wide text-muted">LATEST RESULT</p>
-          <p className="mt-2 font-display text-2xl font-bold">
-            {data.latestMatch.homeTeam.name} {data.latestMatch.homeGoals} -{' '}
-            {data.latestMatch.awayGoals} {data.latestMatch.awayTeam.name}
-          </p>
-          <p className="text-sm text-muted">{formatDate(data.latestMatch.matchDate)}</p>
-        </div>
-      )}
+      <p className="mt-3 text-xs text-muted">
+        Scores update when matches are synced from the data provider.
+      </p>
     </div>
   )
 }
-  
