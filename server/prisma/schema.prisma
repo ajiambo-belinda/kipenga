@@ -8,24 +8,46 @@ datasource db {
   provider = "postgresql"
 }
 
+model Competition {
+  id         Int     @id @default(autoincrement())
+  externalId Int     @unique
+  name       String
+  country    String
+  type       String  @default("League")
+  tier       Int     @default(3)
+  enabled    Boolean @default(false)
+  matches    Match[]
+}
+
 model Team {
   id          Int     @id @default(autoincrement())
   name        String  @unique
+  externalId  Int?    @unique
+  country     String?
   homeMatches Match[] @relation("HomeTeam")
   awayMatches Match[] @relation("AwayTeam")
 }
 
 model Match {
-  id         Int      @id @default(autoincrement())
-  season     String
-  matchDate  DateTime
-  homeTeamId Int
-  awayTeamId Int
-  homeGoals  Int?
-  awayGoals  Int?
-  homeTeam   Team     @relation("HomeTeam", fields: [homeTeamId], references: [id])
-  awayTeam   Team     @relation("AwayTeam", fields: [awayTeamId], references: [id])
+  id            Int          @id @default(autoincrement())
+  season        String
+  matchDate     DateTime
+  kickoffAt     DateTime?
+  status        String       @default("FINISHED")
+  statusShort   String?
+  minute        Int?
+  externalId    Int?         @unique
+  competitionId Int?
+  homeTeamId    Int
+  awayTeamId    Int
+  homeGoals     Int?
+  awayGoals     Int?
+  competition   Competition? @relation(fields: [competitionId], references: [id])
+  homeTeam      Team         @relation("HomeTeam", fields: [homeTeamId], references: [id])
+  awayTeam      Team         @relation("AwayTeam", fields: [awayTeamId], references: [id])
 
   @@unique([matchDate, homeTeamId, awayTeamId])
   @@index([matchDate])
+  @@index([status])
+  @@index([competitionId, matchDate])
 }
