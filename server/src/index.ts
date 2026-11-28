@@ -124,6 +124,38 @@ app.get('/api/fixtures', async (req, res) => {
   })
   res.json(fixtures)
 })
+
+app.get('/api/stats/seasons', async (_req, res) => {
+  const rows = await prisma.$queryRaw<
+    { season: string; home: bigint; draw: bigint; away: bigint; goals: bigint; played: bigint }[]
+  >`
+    SELECT m.season,
+      COUNT(*) FILTER (WHERE m."homeGoals" > m."awayGoals") AS home,
+      COUNT(*) FILTER (WHERE m."homeGoals" = m."awayGoals") AS draw,
+      COUNT(*) FILTER (WHERE m."homeGoals" < m."awayGoals") AS away,
+      SUM(m."homeGoals" + m."awayGoals") AS goals,
+      COUNT(*) AS played
+    FROM "Match" m
+    JOIN "Competition" c ON c.id = m."competitionId"
+    WHERE c."externalId" = 39
+      AND m.status = 'FINISHED'
+      AND m."homeGoals" IS NOT NULL
+      AND m."awayGoals" IS NOT NULL
+    GROUP BY m.season
+    ORDER BY m.season
+  `
+  res.json(
+    rows.map((r) => ({
+      season: r.season,
+      home: Number(r.home),
+      draw: Number(r.draw),
+      away: Number(r.away),
+      played: Number(r.played),
+      goalsPerMatch: r.played > 0n ? Math.round((Number(r.goals) / Number(r.played)) * 100) / 100 : 0,
+    })),
+  )
+})
+
 const port = Number(process.env.PORT ?? 3000)
 app.listen(port, () => {
   console.log(`API running on http://localhost:${port}`)
