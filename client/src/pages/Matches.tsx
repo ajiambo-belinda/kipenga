@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
+import { localDate, hoursAheadOfUtc } from '../lib/dates'
 
 type Fixture = {
   id: number
@@ -20,17 +21,9 @@ const tabs = [
   { label: 'Tomorrow', days: 1 },
 ]
 
-// The visitor's own calendar date, not the UTC date
-function localDate(daysFromToday: number) {
-  const d = new Date()
-  d.setDate(d.getDate() + daysFromToday)
-  const mm = String(d.getMonth() + 1).padStart(2, '0')
-  const dd = String(d.getDate()).padStart(2, '0')
-  return `${d.getFullYear()}-${mm}-${dd}`
-}
 
-// Nairobi is 3 hours ahead of UTC
-const hoursAheadOfUtc = -new Date().getTimezoneOffset() / 60
+
+
 
 async function fetchFixtures(date: string): Promise<Fixture[]> {
   const res = await fetch(
